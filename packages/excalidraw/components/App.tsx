@@ -10533,11 +10533,15 @@ class App extends React.Component<AppProps, AppState> {
 
       // Finalize latex element: trigger async SVG rendering after size is determined
       if (newElement && isLatexElement(newElement)) {
-        this.setState({
-          selectedElementIds: { [newElement.id]: true },
-          activeTool: updateActiveTool(this.state, { type: "selection" }),
-          newElement: null,
-        });
+        if (!activeTool.locked) {
+          this.setState({
+            selectedElementIds: { [newElement.id]: true },
+            activeTool: updateActiveTool(this.state, { type: "selection" }),
+            newElement: null,
+          });
+        } else {
+          this.setState({ newElement: null });
+        }
         this.finalizeLatexElement(newElement);
         return;
       }
