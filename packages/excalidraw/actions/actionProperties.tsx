@@ -2063,18 +2063,17 @@ export const actionChangeLatex = register<{
                   mimeType: IMAGE_MIME_TYPES.svg,
                 });
 
-                // Update fileId and status only — preserve the user's element dimensions
-                app.scene.replaceAllElements(
-                  elements.map((el) => {
-                    if (el.id === latexElement.id && isLatexElement(el)) {
-                      return newElementWith(el, {
-                        fileId: renderResult.fileId,
-                        status: "saved",
-                      });
-                    }
-                    return el;
-                  }),
-                );
+                // Look up the element from the current scene (not the stale closure)
+                // to avoid overwriting concurrent changes made during the async render.
+                const currentEl = app.scene
+                  .getNonDeletedElementsMap()
+                  .get(latexElement.id);
+                if (currentEl && isLatexElement(currentEl)) {
+                  app.scene.mutateElement(currentEl, {
+                    fileId: renderResult.fileId,
+                    status: "saved",
+                  });
+                }
               } catch (error: any) {
                 console.error("Failed to render LaTeX:", error);
               }
