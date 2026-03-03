@@ -131,6 +131,7 @@ import {
   newArrowElement,
   newElement,
   newImageElement,
+  newLatexElement,
   newLinearElement,
   newTextElement,
   refreshTextDimensions,
@@ -143,6 +144,8 @@ import {
   isBoundToContainer,
   isFrameLikeElement,
   isImageElement,
+  isLatexElement,
+  isInitializedLatexElement,
   isEmbeddableElement,
   isInitializedImageElement,
   isLinearElement,
@@ -270,6 +273,7 @@ import type {
   NonDeleted,
   InitializedExcalidrawImageElement,
   ExcalidrawImageElement,
+  ExcalidrawLatexElement,
   FileId,
   NonDeletedExcalidrawElement,
   ExcalidrawTextContainer,
@@ -353,6 +357,11 @@ import {
 
 import { exportCanvas, loadFromBlob } from "../data";
 import Library, { distributeLibraryItemsOnSquareGrid } from "../data/library";
+import {
+  renderLatexToFile,
+  createLatexFileData,
+  loadLatexImage,
+} from "../latex";
 import { restoreAppState, restoreElements } from "../data/restore";
 import { getCenter, getDistance } from "../gesture";
 import { History } from "../history";
@@ -7524,12 +7533,15 @@ class App extends React.Component<AppProps, AppState> {
     } else if (
       this.state.activeTool.type !== "eraser" &&
       this.state.activeTool.type !== "hand" &&
-      this.state.activeTool.type !== "image"
+      this.state.activeTool.type !== "image" &&
+      this.state.activeTool.type !== "latex"
     ) {
       this.createGenericElementOnPointerDown(
         this.state.activeTool.type,
         pointerDownState,
       );
+    } else if (this.state.activeTool.type === "latex") {
+      this.createLatexElementOnPointerDown(pointerDownState);
     }
 
     this.props?.onPointerDown?.(this.state.activeTool, pointerDownState);
@@ -8627,6 +8639,76 @@ class App extends React.Component<AppProps, AppState> {
       width: placeholderSize,
       height: placeholderSize,
     });
+  };
+
+  private createLatexElementOnPointerDown = (
+    pointerDownState: PointerDownState,
+  ): void => {
+    const [gridX, gridY] = getGridPoint(
+      pointerDownState.origin.x,
+      pointerDownState.origin.y,
+      this.lastPointerDownEvent?.[KEYS.CTRL_OR_CMD]
+        ? null
+        : this.getEffectiveGridSize(),
+    );
+
+    const topLayerFrame = this.getTopLayerFrameAtSceneCoords({
+      x: gridX,
+      y: gridY,
+    });
+
+    const element = newLatexElement({
+      type: "latex",
+      x: gridX,
+      y: gridY,
+      strokeColor: this.state.currentItemStrokeColor,
+      backgroundColor: this.state.currentItemBackgroundColor,
+      fillStyle: this.state.currentItemFillStyle,
+      strokeWidth: this.state.currentItemStrokeWidth,
+      strokeStyle: this.state.currentItemStrokeStyle,
+      roughness: this.state.currentItemRoughness,
+      opacity: this.state.currentItemOpacity,
+      roundness: null,
+      locked: false,
+      frameId: topLayerFrame ? topLayerFrame.id : null,
+      status: "pending",
+    });
+
+    this.scene.insertElement(element);
+    this.setState({
+      multiElement: null,
+      newElement: element,
+    });
+  };
+
+  private finalizeLatexElement = async (
+    element: ExcalidrawLatexElement,
+  ): Promise<void> => {
+    try {
+      const renderResult = await renderLatexToFile(
+        element.latex,
+        element.displayMode,
+      );
+      const fileData = createLatexFileData(renderResult);
+
+      this.files[renderResult.fileId] = fileData;
+
+      const img = await loadLatexImage(renderResult.dataURL);
+      this.imageCache.set(renderResult.fileId, {
+        image: img,
+        mimeType: IMAGE_MIME_TYPES.svg,
+      });
+
+      this.scene.mutateElement(element, {
+        fileId: renderResult.fileId,
+        status: "saved",
+      });
+    } catch (error: any) {
+      this.scene.mutateElement(element, { status: "error" });
+      this.setState({
+        errorMessage: error.message || t("errors.latexRenderError"),
+      });
+    }
   };
 
   private handleLinearElementOnPointerDown = (
@@ -10387,6 +10469,18 @@ class App extends React.Component<AppProps, AppState> {
         });
       }
 
+      // Give latex elements a default size when user just clicks without dragging
+      if (newElement && isLatexElement(newElement) && isInvisiblySmallElement(newElement)) {
+        const DEFAULT_LATEX_WIDTH = 200;
+        const DEFAULT_LATEX_HEIGHT = 80;
+        this.scene.mutateElement(newElement, {
+          x: newElement.x - DEFAULT_LATEX_WIDTH / 2,
+          y: newElement.y - DEFAULT_LATEX_HEIGHT / 2,
+          width: DEFAULT_LATEX_WIDTH,
+          height: DEFAULT_LATEX_HEIGHT,
+        });
+      }
+
       if (
         activeTool.type !== "selection" &&
         newElement &&
@@ -10435,6 +10529,17 @@ class App extends React.Component<AppProps, AppState> {
         );
         // the above does not guarantee the scene to be rendered again, hence the trigger below
         this.scene.triggerUpdate();
+      }
+
+      // Finalize latex element: trigger async SVG rendering after size is determined
+      if (newElement && isLatexElement(newElement)) {
+        this.setState({
+          selectedElementIds: { [newElement.id]: true },
+          activeTool: updateActiveTool(this.state, { type: "selection" }),
+          newElement: null,
+        });
+        this.finalizeLatexElement(newElement);
+        return;
       }
 
       if (pointerDownState.drag.hasOccurred) {
@@ -11319,6 +11424,34 @@ class App extends React.Component<AppProps, AppState> {
       }
 
       if (updatedFiles.size) {
+        this.scene.triggerUpdate();
+      }
+    }
+
+    // Also load initialized latex elements into the image cache
+    // Also load initialized latex elements into the image cache
+    const uncachedLatexFileIds: FileId[] = [];
+    const uncachedLatexElementsMap = new Map<FileId, ExcalidrawLatexElement>();
+    for (const el of this.scene.getNonDeletedElements()) {
+      if (isInitializedLatexElement(el) && !el.isDeleted && !this.imageCache.has(el.fileId)) {
+        uncachedLatexFileIds.push(el.fileId);
+        uncachedLatexElementsMap.set(el.fileId, el);
+      }
+    }
+
+    if (uncachedLatexFileIds.length) {
+      const { updatedFiles } = await _updateImageCache({
+        imageCache: this.imageCache,
+        fileIds: uncachedLatexFileIds,
+        files,
+      });
+
+      if (updatedFiles.size) {
+        for (const [fileId, element] of uncachedLatexElementsMap) {
+          if (updatedFiles.has(fileId)) {
+            ShapeCache.delete(element);
+          }
+        }
         this.scene.triggerUpdate();
       }
     }

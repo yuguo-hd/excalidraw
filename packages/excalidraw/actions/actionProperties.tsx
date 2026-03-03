@@ -49,6 +49,7 @@ import {
   isLinearElement,
   isLineElement,
   isTextElement,
+  isLatexElement,
   isUsingAdaptiveRadius,
 } from "@excalidraw/element";
 
@@ -1967,6 +1968,124 @@ export const actionChangeArrowType = register<keyof typeof ARROW_TYPE>({
             )}
             onChange={(value) => updateData(value)}
           />
+        </div>
+      </fieldset>
+    );
+  },
+});
+
+export const actionChangeLatex = register<{
+  latex: string;
+  elementId: string;
+}>({
+  name: "changeLatex",
+  label: "Change LaTeX",
+  trackEvent: false,
+  perform: (elements, appState, value, app) => {
+    if (!value) {
+      return false;
+    }
+
+    const { latex, elementId } = value;
+    const element = elements.find((el) => el.id === elementId);
+
+    if (!element || !isLatexElement(element)) {
+      return false;
+    }
+
+    return {
+      elements: elements.map((el) => {
+        if (el.id === elementId && isLatexElement(el)) {
+          return newElementWith(el, {
+            latex,
+          });
+        }
+        return el;
+      }),
+      appState,
+      captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+    };
+  },
+  PanelComponent: ({ elements, appState, updateData, app }) => {
+    const selectedElements = getSelectedElements(elements, appState);
+    const latexElement = selectedElements.find(isLatexElement);
+
+    if (!latexElement) {
+      return null;
+    }
+
+    return (
+      <fieldset>
+        <legend>{t("labels.latexFormula")}</legend>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <textarea
+            value={latexElement.latex}
+            onChange={(e) => {
+              updateData({
+                latex: e.target.value,
+                elementId: latexElement.id,
+              });
+            }}
+            placeholder="Enter LaTeX formula..."
+            style={{
+              width: "100%",
+              minHeight: "60px",
+              padding: "8px",
+              fontFamily: "monospace",
+              fontSize: "12px",
+              resize: "vertical",
+            }}
+          />
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const {
+                  renderLatexToFile,
+                  createLatexFileData,
+                  loadLatexImage,
+                } = await import("../latex");
+                const { IMAGE_MIME_TYPES } = await import("@excalidraw/common");
+
+                const renderResult = await renderLatexToFile(
+                  latexElement.latex,
+                  latexElement.displayMode,
+                );
+                const fileData = createLatexFileData(renderResult);
+
+                // Add file to the app's files
+                app.files[renderResult.fileId] = fileData;
+
+                // Load image into cache
+                const img = await loadLatexImage(renderResult.dataURL);
+                app.imageCache.set(renderResult.fileId, {
+                  image: img,
+                  mimeType: IMAGE_MIME_TYPES.svg,
+                });
+
+                // Update fileId and status only — preserve the user's element dimensions
+                app.scene.replaceAllElements(
+                  elements.map((el) => {
+                    if (el.id === latexElement.id && isLatexElement(el)) {
+                      return newElementWith(el, {
+                        fileId: renderResult.fileId,
+                        status: "saved",
+                      });
+                    }
+                    return el;
+                  }),
+                );
+              } catch (error: any) {
+                console.error("Failed to render LaTeX:", error);
+              }
+            }}
+            style={{
+              padding: "8px 16px",
+              cursor: "pointer",
+            }}
+          >
+            {t("labels.renderLatex")}
+          </button>
         </div>
       </fieldset>
     );

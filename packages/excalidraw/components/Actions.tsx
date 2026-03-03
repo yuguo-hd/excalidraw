@@ -15,6 +15,7 @@ import {
   hasBoundTextElement,
   isElbowArrow,
   isImageElement,
+  isLatexElement,
   isLinearElement,
   isTextElement,
   isArrowElement,
@@ -233,6 +234,8 @@ export const SelectedShapeActions = ({
             renderAction("changeTextAlign")}
         </>
       )}
+
+      {targetElements.some(isLatexElement) && renderAction("changeLatex")}
 
       {shouldAllowVerticalAlign(targetElements, elementsMap) &&
         renderAction("changeVerticalAlign")}

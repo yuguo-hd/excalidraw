@@ -455,6 +455,7 @@ export const TOOL_TYPE = {
   freedraw: "freedraw",
   text: "text",
   image: "image",
+  latex: "latex",
   eraser: "eraser",
   hand: "hand",
   frame: "frame",

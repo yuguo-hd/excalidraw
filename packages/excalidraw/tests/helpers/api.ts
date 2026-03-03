@@ -14,6 +14,7 @@ import {
   newFreeDrawElement,
   newIframeElement,
   newImageElement,
+  newLatexElement,
   newLinearElement,
   newMagicFrameElement,
   newTextElement,
@@ -32,6 +33,7 @@ import type {
   ExcalidrawLinearElement,
   ExcalidrawFreeDrawElement,
   ExcalidrawImageElement,
+  ExcalidrawLatexElement,
   FileId,
   ExcalidrawFrameElement,
   ExcalidrawElementType,
@@ -202,9 +204,10 @@ export class API {
       : never;
     points?: T extends "arrow" | "line" | "freedraw" ? readonly LocalPoint[] : never;
     locked?: boolean;
-    fileId?: T extends "image" ? string : never;
-    scale?: T extends "image" ? ExcalidrawImageElement["scale"] : never;
-    status?: T extends "image" ? ExcalidrawImageElement["status"] : never;
+    fileId?: T extends "image" | "latex" ? string : never;
+    scale?: T extends "image" | "latex" ? ExcalidrawImageElement["scale"] : never;
+    status?: T extends "image" | "latex" ? ExcalidrawImageElement["status"] : never;
+    latex?: T extends "latex" ? string : never;
     startBinding?: T extends "arrow"
       ? ExcalidrawArrowElement["startBinding"] | ExcalidrawElbowArrowElement["startBinding"]
       : never;
@@ -227,6 +230,8 @@ export class API {
     ? ExcalidrawTextElement
     : T extends "image"
     ? ExcalidrawImageElement
+    : T extends "latex"
+    ? ExcalidrawLatexElement
     : T extends "frame"
     ? ExcalidrawFrameElement
     : T extends "magicframe"
@@ -354,6 +359,18 @@ export class API {
           type,
           fileId: (rest.fileId as string as FileId) ?? null,
           status: rest.status || "saved",
+          scale: rest.scale || [1, 1],
+        });
+        break;
+      case "latex":
+        element = newLatexElement({
+          ...base,
+          width,
+          height,
+          type,
+          latex: rest.latex ?? "\\int_0^\\infty",
+          fileId: (rest.fileId as string as FileId) ?? null,
+          status: rest.status || "pending",
           scale: rest.scale || [1, 1],
         });
         break;

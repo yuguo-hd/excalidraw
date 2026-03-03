@@ -151,6 +151,7 @@ export type ToolType =
   | "freedraw"
   | "text"
   | "image"
+  | "latex"
   | "eraser"
   | "hand"
   | "frame"

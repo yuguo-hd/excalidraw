@@ -15,6 +15,8 @@ import type {
   ExcalidrawFreeDrawElement,
   InitializedExcalidrawImageElement,
   ExcalidrawImageElement,
+  ExcalidrawLatexElement,
+  InitializedExcalidrawLatexElement,
   ExcalidrawTextElementWithContainer,
   ExcalidrawTextContainer,
   ExcalidrawFrameElement,
@@ -41,6 +43,18 @@ export const isImageElement = (
   element: ExcalidrawElement | null,
 ): element is ExcalidrawImageElement => {
   return !!element && element.type === "image";
+};
+
+export const isLatexElement = (
+  element: ExcalidrawElement | null,
+): element is ExcalidrawLatexElement => {
+  return !!element && element.type === "latex";
+};
+
+export const isInitializedLatexElement = (
+  element: ExcalidrawElement | null,
+): element is InitializedExcalidrawLatexElement => {
+  return !!element && element.type === "latex" && !!element.fileId;
 };
 
 export const isEmbeddableElement = (
@@ -185,6 +199,7 @@ export const isBindableElement = (
       element.type === "diamond" ||
       element.type === "ellipse" ||
       element.type === "image" ||
+      element.type === "latex" ||
       element.type === "iframe" ||
       element.type === "embeddable" ||
       element.type === "frame" ||
@@ -201,6 +216,7 @@ export const isRectanguloidElement = (
     (element.type === "rectangle" ||
       element.type === "diamond" ||
       element.type === "image" ||
+      element.type === "latex" ||
       element.type === "iframe" ||
       element.type === "embeddable" ||
       element.type === "frame" ||
@@ -261,6 +277,7 @@ export const isExcalidrawElement = (
     case "frame":
     case "magicframe":
     case "image":
+    case "latex":
     case "selection": {
       return true;
     }

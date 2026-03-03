@@ -58,6 +58,8 @@
     "arrowtype_sharp": "Sharp arrow",
     "arrowtype_round": "Curved arrow",
     "arrowtype_elbowed": "Elbow arrow",
+    "latexFormula": "LaTeX Formula",
+    "renderLatex": "Render",
     "fontSize": "Font size",
     "fontFamily": "Font family",
     "addWatermark": "Add \"Made with Excalidraw\"",
@@ -294,12 +296,14 @@
     },
     "asyncPasteFailedOnRead": "Couldn't paste (couldn't read from system clipboard).",
     "asyncPasteFailedOnParse": "Couldn't paste.",
-    "copyToSystemClipboardFailed": "Couldn't copy to clipboard."
+    "copyToSystemClipboardFailed": "Couldn't copy to clipboard.",
+    "latexRenderError": "Couldn't render LaTeX formula. Please check the syntax."
   },
   "toolBar": {
     "selection": "Selection",
     "lasso": "Lasso selection",
     "image": "Insert image",
+    "latex": "LaTeX formula",
     "rectangle": "Rectangle",
     "diamond": "Diamond",
     "ellipse": "Ellipse",
@@ -335,7 +339,8 @@
     "magicframe": "Wireframe to code",
     "embeddable": "Web Embed",
     "selection": "Selection",
-    "iframe": "IFrame"
+    "iframe": "IFrame",
+    "latex": "LaTeX"
   },
   "headings": {
     "canvasActions": "Canvas actions",

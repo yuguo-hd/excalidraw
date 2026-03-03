@@ -107,6 +107,7 @@ export const AllowedExcalidrawActiveTools: Record<
   ellipse: true,
   line: true,
   image: true,
+  latex: true,
   arrow: true,
   freedraw: true,
   eraser: false,
@@ -421,6 +422,14 @@ export const restoreElement = (
         fileId: element.fileId,
         scale: element.scale || [1, 1],
         crop: element.crop ?? null,
+      });
+    case "latex":
+      return restoreElementWithProperties(element, {
+        latex: element.latex || "\\int_0^\\infty",
+        status: element.status || "pending",
+        fileId: element.fileId ?? null,
+        scale: element.scale || [1, 1],
+        displayMode: element.displayMode ?? true,
       });
     case "line":
     // @ts-ignore LEGACY type

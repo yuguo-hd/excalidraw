@@ -30,6 +30,7 @@ import { isLineElement } from "./typeChecks";
 import type {
   ExcalidrawElement,
   ExcalidrawImageElement,
+  ExcalidrawLatexElement,
   ExcalidrawTextElement,
   ExcalidrawLinearElement,
   ExcalidrawGenericElement,
@@ -542,5 +543,25 @@ export const newImageElement = (
     fileId: opts.fileId ?? null,
     scale: opts.scale ?? [1, 1],
     crop: opts.crop ?? null,
+  };
+};
+
+export const newLatexElement = (
+  opts: {
+    type: ExcalidrawLatexElement["type"];
+    latex?: ExcalidrawLatexElement["latex"];
+    status?: ExcalidrawLatexElement["status"];
+    fileId?: ExcalidrawLatexElement["fileId"];
+    scale?: ExcalidrawLatexElement["scale"];
+    displayMode?: ExcalidrawLatexElement["displayMode"];
+  } & ElementConstructorOpts,
+): NonDeleted<ExcalidrawLatexElement> => {
+  return {
+    ..._newElementBase<ExcalidrawLatexElement>("latex", opts),
+    latex: opts.latex ?? "\\int_0^\\infty",
+    status: opts.status ?? "pending",
+    fileId: opts.fileId ?? null,
+    scale: opts.scale ?? [1, 1],
+    displayMode: opts.displayMode ?? true,
   };
 };

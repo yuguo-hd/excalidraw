@@ -430,6 +430,14 @@ export const ImageIcon = createIcon(
   modifiedTablerIconProps,
 );
 
+// LaTeX formula icon (sigma-like symbol)
+export const LatexIcon = createIcon(
+  <g strokeWidth="1.25">
+    <path d="M4 4h12M4 4l6 6-6 6h12" />
+  </g>,
+  modifiedTablerIconProps,
+);
+
 // tabler-icons: eraser
 export const EraserIcon = createIcon(
   <g strokeWidth="1.5">

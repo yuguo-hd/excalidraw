@@ -58,6 +58,7 @@ import {
   isLinearElement,
   isFreeDrawElement,
   isInitializedImageElement,
+  isInitializedLatexElement,
   isArrowElement,
   hasBoundTextElement,
   isMagicFrameElement,
@@ -543,6 +544,83 @@ const drawElementOnCanvas = (
       context.restore();
       break;
     }
+    case "latex": {
+      context.save();
+
+      const { width: elW, height: elH } = element;
+
+      // Background fill
+      if (element.backgroundColor && element.backgroundColor !== "transparent") {
+        context.fillStyle = element.backgroundColor;
+        context.fillRect(0, 0, elW, elH);
+      }
+
+      const cacheEntry =
+        element.fileId !== null
+          ? renderConfig.imageCache.get(element.fileId)
+          : null;
+      const img = isInitializedLatexElement(element)
+        ? cacheEntry?.image
+        : undefined;
+
+      if (img != null && !(img instanceof Promise)) {
+        const shouldInvertImage =
+          renderConfig.theme === THEME.DARK &&
+          cacheEntry?.mimeType === MIME_TYPES.svg;
+
+        if (shouldInvertImage) {
+          context.filter = DARK_THEME_FILTER;
+        }
+
+        // Scale to fit (object-fit: contain) then center — no deformation
+        const PADDING = 8;
+        const availW = elW - PADDING * 2;
+        const availH = elH - PADDING * 2;
+        const scale = Math.min(availW / img.naturalWidth, availH / img.naturalHeight);
+        const drawW = img.naturalWidth * scale;
+        const drawH = img.naturalHeight * scale;
+        const dx = (elW - drawW) / 2;
+        const dy = (elH - drawH) / 2;
+
+        context.drawImage(
+          img,
+          0,
+          0,
+          img.naturalWidth,
+          img.naturalHeight,
+          dx,
+          dy,
+          drawW,
+          drawH,
+        );
+      } else {
+        // Placeholder while rendering
+        context.fillStyle =
+          renderConfig.theme === THEME.DARK ? "#2E2E2E" : "#E7E7E7";
+        context.fillRect(0, 0, elW, elH);
+        context.fillStyle = renderConfig.theme === THEME.DARK ? "#888" : "#666";
+        context.font = "14px sans-serif";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText("LaTeX", elW / 2, elH / 2);
+      }
+
+      // Border
+      if (element.strokeColor && element.strokeColor !== "transparent") {
+        context.filter = "none";
+        context.strokeStyle = element.strokeColor;
+        context.lineWidth = element.strokeWidth;
+        if (element.strokeStyle === "dashed") {
+          context.setLineDash([element.strokeWidth * 4, element.strokeWidth * 4]);
+        } else if (element.strokeStyle === "dotted") {
+          context.setLineDash([element.strokeWidth, element.strokeWidth * 4]);
+        }
+        context.strokeRect(0, 0, elW, elH);
+      }
+
+      context.restore();
+      break;
+    }
     default: {
       if (isTextElement(element)) {
         const rtl = isRTL(element.text);
@@ -884,6 +962,7 @@ export const renderElement = (
     case "line":
     case "arrow":
     case "image":
+    case "latex":
     case "text":
     case "iframe":
     case "embeddable": {

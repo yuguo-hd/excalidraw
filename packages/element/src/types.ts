@@ -160,6 +160,26 @@ export type InitializedExcalidrawImageElement = MarkNonNullable<
   "fileId"
 >;
 
+export type ExcalidrawLatexElement = _ExcalidrawElementBase &
+  Readonly<{
+    type: "latex";
+    /** LaTeX source code */
+    latex: string;
+    /** Reference to rendered SVG stored as binary file */
+    fileId: FileId | null;
+    /** whether respective file is persisted */
+    status: "pending" | "saved" | "error";
+    /** X and Y scale factors <-1, 1>, used for axis flipping */
+    scale: [number, number];
+    /** whether to render in display mode (block) or inline mode */
+    displayMode: boolean;
+  }>;
+
+export type InitializedExcalidrawLatexElement = MarkNonNullable<
+  ExcalidrawLatexElement,
+  "fileId"
+>;
+
 export type ExcalidrawFrameElement = _ExcalidrawElementBase & {
   type: "frame";
   name: string | null;
@@ -191,6 +211,7 @@ export type ExcalidrawFlowchartNodeElement =
 export type ExcalidrawRectanguloidElement =
   | ExcalidrawRectangleElement
   | ExcalidrawImageElement
+  | ExcalidrawLatexElement
   | ExcalidrawTextElement
   | ExcalidrawFreeDrawElement
   | ExcalidrawIframeLikeElement
@@ -210,6 +231,7 @@ export type ExcalidrawElement =
   | ExcalidrawArrowElement
   | ExcalidrawFreeDrawElement
   | ExcalidrawImageElement
+  | ExcalidrawLatexElement
   | ExcalidrawFrameElement
   | ExcalidrawMagicFrameElement
   | ExcalidrawIframeElement
@@ -262,6 +284,7 @@ export type ExcalidrawBindableElement =
   | ExcalidrawEllipseElement
   | ExcalidrawTextElement
   | ExcalidrawImageElement
+  | ExcalidrawLatexElement
   | ExcalidrawIframeElement
   | ExcalidrawEmbeddableElement
   | ExcalidrawFrameElement
