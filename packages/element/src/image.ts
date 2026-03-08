@@ -10,12 +10,16 @@ import type {
   BinaryFiles,
 } from "@excalidraw/excalidraw/types";
 
-import { isInitializedImageElement } from "./typeChecks";
+import {
+  isInitializedImageElement,
+  isInitializedLatexElement,
+} from "./typeChecks";
 
 import type {
   ExcalidrawElement,
   FileId,
   InitializedExcalidrawImageElement,
+  InitializedExcalidrawLatexElement,
 } from "./types";
 
 export const loadHTMLImageElement = (dataURL: DataURL) => {
@@ -94,6 +98,13 @@ export const getInitializedImageElements = (
   elements.filter((element) =>
     isInitializedImageElement(element),
   ) as InitializedExcalidrawImageElement[];
+
+export const getInitializedLatexElements = (
+  elements: readonly ExcalidrawElement[],
+) =>
+  elements.filter((element) =>
+    isInitializedLatexElement(element),
+  ) as InitializedExcalidrawLatexElement[];
 
 export const isHTMLSVGElement = (node: Node | null): node is SVGElement => {
   // lower-casing due to XML/HTML convention differences

@@ -2051,6 +2051,16 @@ export const actionChangeLatex = register<{
                   latexElement.latex,
                   latexElement.displayMode,
                 );
+
+                // Look up the element from the current scene (not the stale closure)
+                // to avoid committing resources if the element was deleted during async render.
+                const currentEl = app.scene
+                  .getNonDeletedElementsMap()
+                  .get(latexElement.id);
+                if (!currentEl || !isLatexElement(currentEl)) {
+                  return;
+                }
+
                 const fileData = createLatexFileData(renderResult);
 
                 // Add file to the app's files
@@ -2063,17 +2073,10 @@ export const actionChangeLatex = register<{
                   mimeType: IMAGE_MIME_TYPES.svg,
                 });
 
-                // Look up the element from the current scene (not the stale closure)
-                // to avoid overwriting concurrent changes made during the async render.
-                const currentEl = app.scene
-                  .getNonDeletedElementsMap()
-                  .get(latexElement.id);
-                if (currentEl && isLatexElement(currentEl)) {
-                  app.scene.mutateElement(currentEl, {
-                    fileId: renderResult.fileId,
-                    status: "saved",
-                  });
-                }
+                app.scene.mutateElement(currentEl, {
+                  fileId: renderResult.fileId,
+                  status: "saved",
+                });
               } catch (error: any) {
                 console.error("Failed to render LaTeX:", error);
               }

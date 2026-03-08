@@ -8689,8 +8689,16 @@ class App extends React.Component<AppProps, AppState> {
         element.latex,
         element.displayMode,
       );
-      const fileData = createLatexFileData(renderResult);
 
+      // Check element still exists after async render before committing resources
+      const currentEl = this.scene
+        .getNonDeletedElementsMap()
+        .get(element.id);
+      if (!currentEl || currentEl.type !== "latex") {
+        return;
+      }
+
+      const fileData = createLatexFileData(renderResult);
       this.files[renderResult.fileId] = fileData;
 
       const img = await loadLatexImage(renderResult.dataURL);
@@ -8699,7 +8707,7 @@ class App extends React.Component<AppProps, AppState> {
         mimeType: IMAGE_MIME_TYPES.svg,
       });
 
-      this.scene.mutateElement(element, {
+      this.scene.mutateElement(currentEl, {
         fileId: renderResult.fileId,
         status: "saved",
       });

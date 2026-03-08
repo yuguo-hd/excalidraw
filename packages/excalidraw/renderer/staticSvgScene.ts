@@ -25,6 +25,7 @@ import {
   isArrowElement,
   isIframeLikeElement,
   isInitializedImageElement,
+  isInitializedLatexElement,
   isTextElement,
 } from "@excalidraw/element";
 
@@ -594,6 +595,76 @@ const renderElementToSvg = (
         );
         addToRoot(clipG || g, element);
       }
+      break;
+    }
+    case "latex": {
+      const elW = Math.round(element.width);
+      const elH = Math.round(element.height);
+      const transform = `translate(${offsetX} ${offsetY}) rotate(${degree} ${cx} ${cy})`;
+
+      const g = svgRoot.ownerDocument.createElementNS(SVG_NS, "g");
+      g.setAttribute("transform", transform);
+      g.setAttribute("opacity", `${opacity}`);
+
+      // Background fill
+      if (element.backgroundColor && element.backgroundColor !== "transparent") {
+        const bgRect = svgRoot.ownerDocument.createElementNS(SVG_NS, "rect");
+        bgRect.setAttribute("width", `${elW}`);
+        bgRect.setAttribute("height", `${elH}`);
+        bgRect.setAttribute("fill", element.backgroundColor);
+        g.appendChild(bgRect);
+      }
+
+      // Formula image — centered with padding (mirrors canvas PADDING=8)
+      const fileData =
+        isInitializedLatexElement(element) && files[element.fileId];
+      if (fileData) {
+        const PADDING = 8;
+        const image = svgRoot.ownerDocument.createElementNS(SVG_NS, "image");
+        image.setAttribute("href", fileData.dataURL);
+        image.setAttribute("x", `${PADDING}`);
+        image.setAttribute("y", `${PADDING}`);
+        image.setAttribute("width", `${elW - PADDING * 2}`);
+        image.setAttribute("height", `${elH - PADDING * 2}`);
+        image.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+        if (
+          renderConfig.theme === THEME.DARK &&
+          fileData.mimeType === MIME_TYPES.svg
+        ) {
+          image.setAttribute("filter", DARK_THEME_FILTER);
+        }
+
+        g.appendChild(image);
+      }
+
+      // Border stroke
+      if (element.strokeColor && element.strokeColor !== "transparent") {
+        const strokeRect = svgRoot.ownerDocument.createElementNS(SVG_NS, "rect");
+        strokeRect.setAttribute("width", `${elW}`);
+        strokeRect.setAttribute("height", `${elH}`);
+        strokeRect.setAttribute("fill", "none");
+        strokeRect.setAttribute("stroke", element.strokeColor);
+        strokeRect.setAttribute("stroke-width", `${element.strokeWidth}`);
+        if (element.strokeStyle === "dashed") {
+          const dash = element.strokeWidth * 4;
+          strokeRect.setAttribute("stroke-dasharray", `${dash} ${dash}`);
+        } else if (element.strokeStyle === "dotted") {
+          const dot = element.strokeWidth;
+          const gap = element.strokeWidth * 4;
+          strokeRect.setAttribute("stroke-dasharray", `${dot} ${gap}`);
+        }
+        g.appendChild(strokeRect);
+      }
+
+      const clipG = maybeWrapNodesInFrameClipPath(
+        element,
+        root,
+        [g],
+        renderConfig.frameRendering,
+        elementsMap,
+      );
+      addToRoot(clipG || g, element);
       break;
     }
     // frames are not rendered and only acts as a container

@@ -19,6 +19,7 @@ import { getCommonBounds, getElementAbsoluteCoords } from "@excalidraw/element";
 
 import {
   getInitializedImageElements,
+  getInitializedLatexElements,
   updateImageCache,
 } from "@excalidraw/element";
 
@@ -230,11 +231,14 @@ export const exportToCanvas = async (
 
   const defaultAppState = getDefaultAppState();
 
+  const fileIds = [
+    ...getInitializedImageElements(elementsForRender).map((el) => el.fileId),
+    ...getInitializedLatexElements(elementsForRender).map((el) => el.fileId),
+  ];
+
   const { imageCache } = await updateImageCache({
     imageCache: new Map(),
-    fileIds: getInitializedImageElements(elementsForRender).map(
-      (element) => element.fileId,
-    ),
+    fileIds,
     files,
   });
 
