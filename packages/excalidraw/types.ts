@@ -53,7 +53,6 @@ import type { Spreadsheet } from "./charts";
 import type { ClipboardData } from "./clipboard";
 import type App from "./components/App";
 import type Library from "./data/library";
-import type { FileSystemHandle } from "./data/filesystem";
 import type { ContextMenuItems } from "./components/ContextMenu";
 import type { SnapLine } from "./snapping";
 import type { ImportedDataState } from "./data/types";
@@ -409,7 +408,11 @@ export interface AppState {
   previousSelectedElementIds: { [id: string]: true };
   selectedElementsAreBeingDragged: boolean;
   shouldCacheIgnoreZoom: boolean;
-  toast: { message: string; closable?: boolean; duration?: number } | null;
+  toast: {
+    message: React.ReactNode;
+    closable?: boolean;
+    duration?: number;
+  } | null;
   zenModeEnabled: boolean;
   theme: Theme;
   /** grid cell px size */
@@ -428,7 +431,7 @@ export interface AppState {
   offsetTop: number;
   offsetLeft: number;
 
-  fileHandle: FileSystemHandle | null;
+  fileHandle: FileSystemFileHandle | null;
   collaborators: Map<SocketId, Collaborator>;
   stats: {
     open: boolean;
@@ -547,17 +550,43 @@ export type OnUserFollowedPayload = {
   action: "FOLLOW" | "UNFOLLOW";
 };
 
+export type OnExportProgress = {
+  type: "progress";
+  message?: React.ReactNode;
+  /** 0-1 range */
+  progress?: number;
+};
+
 export interface ExcalidrawProps {
   onChange?: (
     elements: readonly OrderedExcalidrawElement[],
     appState: AppState,
     files: BinaryFiles,
   ) => void;
+  /**
+   * note: only subscribes if the props.onIncrement is defined on initial render
+   */
   onIncrement?: (event: DurableIncrement | EphemeralIncrement) => void;
   initialData?:
     | (() => MaybePromise<ExcalidrawInitialDataState | null>)
     | MaybePromise<ExcalidrawInitialDataState | null>;
-  excalidrawAPI?: (api: ExcalidrawImperativeAPI) => void;
+  /**
+   * Invoked as soon as the Excalidraw API is available
+   * NOTE editor is not yet mounted, and state is not yet initialized
+   */
+  onExcalidrawAPI?: (api: ExcalidrawImperativeAPI | null) => void;
+  /**
+   * Invoked once the editor root is mounted.
+   */
+  onMount?: (payload: ExcalidrawMountPayload) => void;
+  /**
+   * Invoked when the editor root is unmounted.
+   */
+  onUnmount?: () => void;
+  /**
+   * Invoked once the initial scene is loaded.
+   */
+  onInitialize?: (api: ExcalidrawImperativeAPI) => void;
   isCollaborating?: boolean;
   onPointerUpdate?: (payload: {
     pointer: { x: number; y: number; tool: "pointer" | "laser" };
@@ -642,6 +671,32 @@ export interface ExcalidrawProps {
   aiEnabled?: boolean;
   showDeprecatedFonts?: boolean;
   renderScrollbars?: boolean;
+  /**
+   * Called before exporting to a file.
+   *
+   * Allows the host app to intercept and delay saving until async operations
+   * (e.g., images are loaded) complete.
+   *
+   * If Promise/AsyncGenerator is returned, a progress toast will be shown
+   * until the operation completes. Generator can yield progress updates.
+   */
+  onExport?: (
+    /** type of export. Currently we only call for JSON exports or
+     * JSON-embedded PNG (which is also identified as `json` type here)*/
+    type: "json",
+    data: {
+      elements: readonly ExcalidrawElement[];
+      appState: AppState;
+      files: BinaryFiles;
+    },
+    options: {
+      /** signal that gets aborted if user cancels the export (e.g. closes
+       * the native file picker dialog). In that case, you can either
+       * return immediately, or throw AbortError.
+       */
+      signal: AbortSignal;
+    },
+  ) => MaybePromise<void> | AsyncGenerator<OnExportProgress, void>;
 }
 
 export type SceneData = {
@@ -720,6 +775,7 @@ export type AppProps = Merge<
 export type AppClassProperties = {
   props: AppProps;
   state: AppState;
+  api: App["api"];
   sessionExportThemeOverride: App["sessionExportThemeOverride"];
   interactiveCanvas: HTMLCanvasElement | null;
   /** static canvas */
@@ -765,9 +821,13 @@ export type AppClassProperties = {
   onPointerUpEmitter: App["onPointerUpEmitter"];
   updateEditorAtom: App["updateEditorAtom"];
   onPointerDownEmitter: App["onPointerDownEmitter"];
+  onEvent: App["onEvent"];
+  onStateChange: App["onStateChange"];
 
   lastPointerMoveCoords: App["lastPointerMoveCoords"];
   bindModeHandler: App["bindModeHandler"];
+
+  setAppState: App["setAppState"];
 };
 
 export type PointerDownState = Readonly<{
@@ -840,7 +900,24 @@ export type PointerDownState = Readonly<{
 
 export type UnsubscribeCallback = () => void;
 
+export type ExcalidrawMountPayload = {
+  excalidrawAPI: ExcalidrawImperativeAPI;
+  /*
+   *Excalidraw container.
+   * should never be null, but just to be safe
+   */
+  container: HTMLDivElement | null;
+};
+
+export type ExcalidrawImperativeAPIEventMap = {
+  "editor:mount": [payload: ExcalidrawMountPayload];
+  "editor:initialize": [api: ExcalidrawImperativeAPI];
+  "editor:unmount": [];
+};
+
 export interface ExcalidrawImperativeAPI {
+  /** Whether the editor has been unmounted and the API is no longer usable. */
+  isDestroyed: boolean;
   updateScene: InstanceType<typeof App>["updateScene"];
   applyDeltas: InstanceType<typeof App>["applyDeltas"];
   mutateElement: InstanceType<typeof App>["mutateElement"];
@@ -906,6 +983,8 @@ export interface ExcalidrawImperativeAPI {
   onUserFollow: (
     callback: (payload: OnUserFollowedPayload) => void,
   ) => UnsubscribeCallback;
+  onStateChange: InstanceType<typeof App>["onStateChange"];
+  onEvent: InstanceType<typeof App>["onEvent"];
 }
 
 export type FrameNameBounds = {
