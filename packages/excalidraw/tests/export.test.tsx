@@ -154,6 +154,7 @@ describe("export", () => {
 
     const elements = [
       API.createElement({
+        id: "transformed-image-1",
         type: "image",
         fileId: "file_A",
         x: 0,
@@ -164,6 +165,7 @@ describe("export", () => {
         angle: normalizeAngle(315),
       }),
       API.createElement({
+        id: "transformed-image-2",
         type: "image",
         fileId: "file_A",
         x: 100,
@@ -174,6 +176,7 @@ describe("export", () => {
         angle: normalizeAngle(45),
       }),
       API.createElement({
+        id: "transformed-image-3",
         type: "image",
         fileId: "file_A",
         x: 0,
@@ -184,6 +187,7 @@ describe("export", () => {
         angle: normalizeAngle(45),
       }),
       API.createElement({
+        id: "transformed-image-4",
         type: "image",
         fileId: "file_A",
         x: 100,
