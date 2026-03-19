@@ -67,10 +67,9 @@ export const fileSave = (
       extensions: [`.${opts.extension}`],
       mimeTypes: opts.mimeTypes,
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    opts.fileHandle as any,
+    opts.fileHandle,
     false,
-  ) as Promise<FileSystemFileHandle | null>;
+  );
 };
 
 export { nativeFileSystemSupported };

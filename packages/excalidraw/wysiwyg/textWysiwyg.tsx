@@ -53,7 +53,7 @@ import type {
   ExcalidrawTextElement,
 } from "@excalidraw/element/types";
 
-import { actionSaveToActiveFile } from "../actions/actionExport";
+import { actionSaveToActiveFile } from "../actions";
 
 import {
   parseClipboard,
