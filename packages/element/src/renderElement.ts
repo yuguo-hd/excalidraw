@@ -24,6 +24,7 @@ import {
   invariant,
   applyDarkModeFilter,
   isSafari,
+  isTransparent,
 } from "@excalidraw/common";
 
 import type {
@@ -67,7 +68,7 @@ import {
 import { getContainingFrame } from "./frame";
 import { getCornerRadius } from "./utils";
 
-import { ShapeCache } from "./shape";
+import { ShapeCache, generateRoughOptions } from "./shape";
 
 import type {
   ExcalidrawElement,
@@ -605,17 +606,19 @@ const drawElementOnCanvas = (
         context.fillText("LaTeX", elW / 2, elH / 2);
       }
 
-      // Border
-      if (element.strokeColor && element.strokeColor !== "transparent") {
+      // Border - use roughjs so stroke style/roughness settings work like rectangles
+      if (!isTransparent(element.strokeColor)) {
         context.filter = "none";
-        context.strokeStyle = element.strokeColor;
-        context.lineWidth = element.strokeWidth;
-        if (element.strokeStyle === "dashed") {
-          context.setLineDash([element.strokeWidth * 4, element.strokeWidth * 4]);
-        } else if (element.strokeStyle === "dotted") {
-          context.setLineDash([element.strokeWidth, element.strokeWidth * 4]);
-        }
-        context.strokeRect(0, 0, elW, elH);
+        const isDarkMode = renderConfig.theme === THEME.DARK;
+        rc.draw(
+          rc.generator.rectangle(
+            0,
+            0,
+            elW,
+            elH,
+            generateRoughOptions(element, false, isDarkMode),
+          ),
+        );
       }
 
       context.restore();

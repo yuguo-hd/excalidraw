@@ -256,6 +256,7 @@ export const generateRoughOptions = (
       return options;
     }
     case "arrow":
+    case "latex":
       return options;
     default: {
       throw new Error(`Unimplemented type ${element.type}`);

@@ -171,7 +171,10 @@
     "linkToElement": "链接到对象",
     "wrapSelectionInFrame": "用选中的元素创建画框",
     "tab": "Tab",
-    "shapeSwitch": "切换形状"
+    "shapeSwitch": "切换形状",
+    "latexFormula": "LaTeX 公式",
+    "latexFormulaPlaceholder": "输入 LaTeX 公式...",
+    "renderLatex": "渲染"
   },
   "elementLink": {
     "title": "链接到对象",

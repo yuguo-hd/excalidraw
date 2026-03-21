@@ -2076,7 +2076,7 @@ export const actionChangeLatex = register<{
                 elementId: latexElement.id,
               });
             }}
-            placeholder="Enter LaTeX formula..."
+            placeholder={t("labels.latexFormulaPlaceholder")}
             style={{
               width: "100%",
               minHeight: "60px",
@@ -2084,6 +2084,7 @@ export const actionChangeLatex = register<{
               fontFamily: "monospace",
               fontSize: "12px",
               resize: "vertical",
+              boxSizing: "border-box",
             }}
           />
           <button

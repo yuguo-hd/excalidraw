@@ -66,6 +66,7 @@
     "arrowtype_round": "Curved arrow",
     "arrowtype_elbowed": "Elbow arrow",
     "latexFormula": "LaTeX Formula",
+    "latexFormulaPlaceholder": "Enter LaTeX formula...",
     "renderLatex": "Render",
     "fontSize": "Font size",
     "fontFamily": "Font family",
